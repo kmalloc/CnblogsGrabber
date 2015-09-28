@@ -1,32 +1,58 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
+import io
 import urllib2
 
 from bs4 import element
 from bs4 import BeautifulSoup
 
-class GrabCnblogPost():
-    def __init__(self, name):
-        self.url = 'http://www.cnblogs.com/' + name
-        self.url_list = []
+class FileSystemSaver:
+    def StoreTxtFile(self, path, content):
+        folder = os.path.dirname(path)
+        self.__create_folder__(folder)
+        self.__write_text__(path, content)
 
-    def __create_folder__(self, output_path, title):
-        new_folder = os.path.join(output_path, title)
+    def StoreBinFile(self, path, content):
+        folder = os.path.dirname(path)
+        self.__create_folder__(folder)
+        self.__write_binary__(path, content)
+
+    def __create_folder__(self, folder):
         try:
-            if not os.path.isdir(new_folder):
-                os.mkdir(new_folder)
-        except:
-            print "failed to create folder:", new_folder
+            if not os.path.isdir(folder):
+                os.mkdir(folder)
+        except Exception as e:
+            print "failed to create folder:", folder
+            print "error:", e
 
-        return new_folder
+        return folder
 
-    def __write_file__(self, path, content):
+    def __write_text__(self, path, content):
         try:
-            with open(path, 'wb') as file:
+            with io.open(path, 'w') as file:
                 file.write(content)
-        except:
+        except Exception as e:
             print "failed to write file:", path
+            print "error:", e
+
+    def __write_binary__(self, path, content):
+        try:
+            with io.open(path, 'wb') as file:
+                file.write(content)
+        except Exception as e:
+            print "failed to write file:", path
+            print "error:", e
+
+class SaeStorageSaver:
+    def StoreFile(self, path, content):
+        pass
+
+class GrabCnblogPost():
+    def __init__(self, name, saver):
+        self.url = 'http://www.cnblogs.com/' + name
+        self.saver = saver
+        self.url_list = []
 
     def __get_url__(self, url):
         response = urllib2.urlopen(url, timeout=1500)
@@ -84,6 +110,8 @@ class GrabCnblogPost():
         return ret
 
     def __get_blog__(self, output_path, url_list):
+
+        num = 0
         for url in url_list:
             response = urllib2.urlopen(url, timeout=1500)
             soup = BeautifulSoup(response.read(), "html.parser")
@@ -92,10 +120,13 @@ class GrabCnblogPost():
             if not post:
                 return
 
-            folder = self.__create_folder__(output_path, title)
+            num += 1
+            folder = os.path.join(output_path, title)
             content = "\n" + title + "\n\n" + self.__extract_post_content__(post)
-            path = os.path.join(folder, title.string)
-            self.__write_file__(path, content.encode('utf-8'))
+            content.encode('utf-8')
+
+            txt_file = os.path.join(folder, title)
+            self.saver.StoreTxtFile(txt_file, content)
 
             # grab image files
             img_links = post.find_all('img')
@@ -104,9 +135,9 @@ class GrabCnblogPost():
                 img = urllib2.urlopen(img_url).read()
                 file = self.__extract_file_name__(img_url)
                 path = os.path.join(folder, file)
-                self.__write_file__(path, img)
+                self.saver.StoreBinFile(path, img)
 
-        return
+        return num
 
     def __extract_file_name__(self, link):
         for s in range(1, len(link)+ 1):
@@ -119,12 +150,17 @@ class GrabCnblogPost():
 
     def get_all_post(self, output_path):
         self.__get_url__(self.url)
-        self.__get_blog__(output_path, self.url_list)
-
-grab = GrabCnblogPost('catch')
-grab.get_all_post(r'f:\blogs')
+        return self.__get_blog__(output_path, self.url_list)
 
 
+if __name__ == "__main__":
+    saver = FileSystemSaver()
+else:
+    saver = SaeStorageSaver()
 
+grab = GrabCnblogPost('catch', saver)
+num = grab.get_all_post('/home/miliao/blog')
+
+print "(", num, ") posts are saved.\n"
 
 

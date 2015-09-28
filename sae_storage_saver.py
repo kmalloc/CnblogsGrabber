@@ -17,9 +17,10 @@ class SaeStorageSaver:
 
 class SaeAppSaveBlog:
     def GET(self):
-        saver = SaeStorageSaver(str(datetime.datetime.now())
+        time = str(datetime.datetime.now())
+        saver = SaeStorageSaver("blogbackup")
         grabber = GrabCnblogPost('catch', saver)
-        num = grabber.get_all_post('blog/')
+        num = grabber.get_all_post('blog/' + time + "/")
         return "(" + str(num) + ") posts are saved"
 
 

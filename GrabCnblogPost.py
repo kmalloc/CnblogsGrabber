@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-import io
 import urllib2
 
 from bs4 import element
@@ -30,19 +29,19 @@ class FileSystemSaver:
 
     def __write_text__(self, path, content):
         try:
-            with io.open(path, 'w') as file:
-                file.write(content)
+            with open(path, 'wb') as fh:
+                fh.write(content)
         except Exception as e:
-            print "failed to write file:", path
             print "error:", e
+            print "failed to write file:", path
 
     def __write_binary__(self, path, content):
         try:
-            with io.open(path, 'wb') as file:
-                file.write(content)
+            with open(path, 'wb') as fh:
+                fh.write(content)
         except Exception as e:
-            print "failed to write file:", path
             print "error:", e
+            print "failed to write file:", path
 
 
 class GrabCnblogPost():
@@ -120,10 +119,9 @@ class GrabCnblogPost():
             num += 1
             folder = os.path.join(output_path, title)
             content = "\n" + title + "\n\n" + self.__extract_post_content__(post)
-            content.encode('utf-8')
 
             txt_file = os.path.join(folder, title)
-            self.saver.StoreTxtFile(txt_file, content)
+            self.saver.StoreTxtFile(txt_file, content.encode("utf-8"))
 
             # grab image files
             img_links = post.find_all('img')

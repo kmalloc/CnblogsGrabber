@@ -44,9 +44,6 @@ class FileSystemSaver:
             print "failed to write file:", path
             print "error:", e
 
-class SaeStorageSaver:
-    def StoreFile(self, path, content):
-        pass
 
 class GrabCnblogPost():
     def __init__(self, name, saver):
@@ -155,12 +152,7 @@ class GrabCnblogPost():
 
 if __name__ == "__main__":
     saver = FileSystemSaver()
-else:
-    saver = SaeStorageSaver()
-
-grab = GrabCnblogPost('catch', saver)
-num = grab.get_all_post('/home/miliao/blog')
-
-print "(", num, ") posts are saved.\n"
-
+    grabber = GrabCnblogPost('catch', saver)
+    num = grabber.get_all_post('/home/miliao/blog')
+    print "(", num, ") posts are saved.\n"
 

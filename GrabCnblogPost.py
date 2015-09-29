@@ -32,16 +32,16 @@ class FileSystemSaver:
             with open(path, 'wb') as fh:
                 fh.write(content)
         except Exception as e:
-            print "error:", e
             print "failed to write file:", path
+            print "error:", e
 
     def __write_binary__(self, path, content):
         try:
             with open(path, 'wb') as fh:
                 fh.write(content)
         except Exception as e:
-            print "error:", e
             print "failed to write file:", path
+            print "error:", e
 
 
 class GrabCnblogPost():
@@ -49,9 +49,18 @@ class GrabCnblogPost():
         self.url = 'http://www.cnblogs.com/' + name
         self.saver = saver
         self.url_list = []
+        self.error_url = []
 
     def __get_url__(self, url):
-        response = urllib2.urlopen(url, timeout=1500)
+
+        try:
+            response = urllib2.urlopen(url, timeout=16)
+        except Exception as e:
+            self.error_url.append(url)
+            info = "Failed to connect to cnblogs, url:", url, ", error:" + str(e)
+            print info
+            return info
+
         soup = BeautifulSoup(response.read(), "html.parser")
         for a in soup.find_all('a', attrs={'class' : 'postTitle2'}):
             self.url_list.append(a.get('href'))
@@ -109,7 +118,14 @@ class GrabCnblogPost():
 
         num = 0
         for url in url_list:
-            response = urllib2.urlopen(url, timeout=1500)
+            try:
+                response = urllib2.urlopen(url, timeout=16)
+            except Exception as e:
+                self.error_url.append(url)
+                info = "Failed to fetch post page, url:", url, ", error:" + str(e)
+                print info
+                continue
+
             soup = BeautifulSoup(response.read(), "html.parser")
             title = soup.find(id='cb_post_title_url').string
             post = soup.find(id='cnblogs_post_body')
@@ -144,13 +160,20 @@ class GrabCnblogPost():
         self.url_list = []
 
     def get_all_post(self, output_path):
+        self.error_url = []
         self.__get_url__(self.url)
-        return self.__get_blog__(output_path, self.url_list)
+        num = self.__get_blog__(output_path, self.url_list)
 
+        ret = str(num) + " posts are saved, followings are failed (" + str(len(self.error_url)) + "):\n"
+        for url in self.error_url:
+            ret += url + "\n"
+
+        return ret
 
 if __name__ == "__main__":
     saver = FileSystemSaver()
     grabber = GrabCnblogPost('catch', saver)
-    num = grabber.get_all_post('/home/miliao/blog')
-    print "(", num, ") posts are saved.\n"
+    info = grabber.get_all_post('/home/miliao/blog')
+    print info
+
 

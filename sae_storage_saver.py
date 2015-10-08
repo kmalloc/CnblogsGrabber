@@ -8,6 +8,7 @@ from GrabCnblogPost import GrabCnblogPost
 
 g_backup_path = "blog/"
 g_max_back_up_list = 32
+g_sae_storage_bucket = "blogbackup"
 
 
 class SaeStorageSaver:
@@ -19,6 +20,9 @@ class SaeStorageSaver:
 
     def StoreBinFile(self, path, content):
         self.bucket.put_object(path, content)
+        
+    def GetObjectByPath(self, path):
+        return self.bucket.get_object_contents(path)
         
     def GetItemUnder(self, path):
         return [x for x in self.bucket.list(path)]
@@ -64,7 +68,7 @@ class BlogSaver:
         time = str(datetime.datetime.now())
         print "now to backup my blog, time:", time
         
-        saver = SaeStorageSaver("blogbackup")
+        saver = SaeStorageSaver(g_sae_storage_bucket)
         grabber = GrabCnblogPost('catch', saver)
         res = grabber.get_all_post(g_backup_path + time)
         
@@ -75,12 +79,20 @@ class BlogSaver:
         return res + "\ndetail information of my blog:\n" + info
 
 
-class BlogShow:
+class BlogShower:
     def Show(self):
-        saver = SaeStorageSaver("blogbackup")
+        saver = SaeStorageSaver(g_sae_storage_bucket)
         all_backup = saver.GetBackupList()
         return format_storage_item(all_backup)
-
+    def ShowPost(self, path):
+        if path == "":
+           return "invalid post path."
+        print "try to get post:", path
+        saver = SaeStorageSaver(g_sae_storage_bucket)
+        try:
+            return saver.GetObjectByPath(path)
+        except Exception as e:
+        	return str(e)
 
 class BlogCleaner:
     def DeleteOld(self, saver, items):
@@ -105,7 +117,7 @@ class BlogCleaner:
         return info
     
     def Clean(self):
-        saver = SaeStorageSaver("blogbackup")
+        saver = SaeStorageSaver(g_sae_storage_bucket)
         all_backup = saver.GetBackupList()
         sz = len(all_backup)
         if sz <= g_max_back_up_list:
@@ -120,7 +132,7 @@ class BlogCleaner:
 class BlogHandler:
     def GET(self):
         info = ""
-        data = web.input(op="None")
+        data = web.input(op="None", p="")
         if data.op == "save":
             save = BlogSaver()
             info = save.Save()
@@ -128,8 +140,12 @@ class BlogHandler:
             cleaner = BlogCleaner()
             info = cleaner.Clean()
         elif data.op == "show":
-            show = BlogShow()
+            show = BlogShower()
             info = show.Show()
+        elif data.op == "showpost":
+            path = data.p
+            show = BlogShower()
+            info = show.ShowPost(path)
         else:
             info = "Welcome to my secret blog handler, please contact me by my email: kmalloc@live.com, thanks."
             

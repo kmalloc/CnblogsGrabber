@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import sys
+import web
 import datetime
 from sae.storage import Bucket
 from GrabCnblogPost import GrabCnblogPost
 
 
 g_backup_path = "blog/"
-
-g_max_back_up_list = 5
+g_max_back_up_list = 32
 
 
 class SaeStorageSaver:
@@ -37,7 +37,7 @@ def categorize_post(items):
         seg = name.split("/")
         
         if len(seg) < 2:
-        	continue
+            continue
             
         if seg[1] not in entry:
             entry[seg[1]] = []
@@ -45,6 +45,7 @@ def categorize_post(items):
         entry[seg[1]].append(name)
 
     return entry
+    
     
 def format_storage_item(items):
     entry = categorize_post(items)
@@ -58,8 +59,8 @@ def format_storage_item(items):
     return info
 
 
-class SaeAppSaveBlog:
-    def GET(self):
+class BlogSaver:
+    def Save(self):
         time = str(datetime.datetime.now())
         print "now to backup my blog, time:", time
         
@@ -71,10 +72,17 @@ class SaeAppSaveBlog:
         
         info = format_storage_item(all_backup)
         
-        return res + "\nbackup available:\n" + info
-    
+        return res + "\ndetail information of my blog:\n" + info
 
-class SaeAppCleanOldBackup:
+
+class BlogShow:
+    def Show(self):
+        saver = SaeStorageSaver("blogbackup")
+        all_backup = saver.GetBackupList()
+        return format_storage_item(all_backup)
+
+
+class BlogCleaner:
     def DeleteOld(self, saver, items):
         entry = categorize_post(items)
         key_ls = entry.keys()
@@ -96,7 +104,7 @@ class SaeAppCleanOldBackup:
             saver.DeleteObject(it)
         return info
     
-    def GET(self):
+    def Clean(self):
         saver = SaeStorageSaver("blogbackup")
         all_backup = saver.GetBackupList()
         sz = len(all_backup)
@@ -107,4 +115,24 @@ class SaeAppCleanOldBackup:
         left = saver.GetBackupList()
         
         return info + format_storage_item(left)
-        
+    
+
+class BlogHandler:
+    def GET(self):
+        info = ""
+        data = web.input(op="None")
+        if data.op == "save":
+            save = BlogSaver()
+            info = save.Save()
+        elif data.op == "clean":
+            cleaner = BlogCleaner()
+            info = cleaner.Clean()
+        elif data.op == "show":
+            show = BlogShow()
+            info = show.Show()
+        else:
+            info = "Welcome to my secret blog handler, please contact me by my email: kmalloc@live.com, thanks."
+            
+        info = info.replace("\n", "<br>")
+        return "<!DOCTYPE html><head><meta charset=\"UTF-8\"><title>miliao's secret blog handler</title></head><body>%s</body></html>" % info
+    

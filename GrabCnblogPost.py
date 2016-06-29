@@ -160,20 +160,23 @@ class GrabCnblogPost():
         self.url_list = []
 
     def get_all_post(self, output_path):
-        self.error_url = []
         self.__get_url__(self.url)
-        num = self.__get_blog__(output_path, self.url_list)
+        return self.get_post_by_url(self.url_list, output_path)
 
-        ret = str(num) + " posts are saved, followings are failed (" + str(len(self.error_url)) + "):\n"
-        for url in self.error_url:
-            ret += url + "\n"
-
-        return ret
+    def get_post_by_url(self, url, output_path):
+		self.error_url = []
+		num = self.__get_blog__(output_path, url)
+		ret = str(num) + " posts are saved, followings are failed (" + str(len(self.error_url)) + "):\n"
+		
+		for url in self.error_url:
+		    ret += url + "\n"
+		return ret
 
 if __name__ == "__main__":
     saver = FileSystemSaver()
     grabber = GrabCnblogPost('catch', saver)
-    info = grabber.get_all_post('/home/miliao/blog')
-    print info
-
-
+    try:
+        info = grabber.get_all_post('~/blogs')
+        print info
+    except Exception as e:
+        print "error occurs, please check, msg:", str(e)

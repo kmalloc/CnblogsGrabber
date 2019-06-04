@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf8 -*-
 import sys
 import os
 import urllib2
@@ -8,14 +8,14 @@ from bs4 import BeautifulSoup
 
 class FileSystemSaver:
     def StoreTxtFile(self, path, content):
-        folder = os.path.dirname(path)
+        folder = os.path.dirname(path.decode('utf-8'))
         self.__create_folder__(folder)
-        self.__write_text__(path, content)
+        self.__write_text__(path.decode('utf-8'), content)
 
     def StoreBinFile(self, path, content):
-        folder = os.path.dirname(path)
+        folder = os.path.dirname(path.decode('utf-8'))
         self.__create_folder__(folder)
-        self.__write_binary__(path, content)
+        self.__write_binary__(path.decode('utf-8'), content)
 
     def __create_folder__(self, folder):
         try:
@@ -23,7 +23,7 @@ class FileSystemSaver:
                 os.mkdir(folder)
         except Exception as e:
             print "failed to create folder:", folder
-            print "error:", e
+            print "error:%s"%e
 
         return folder
 
@@ -61,9 +61,9 @@ class GrabCnblogPost():
             print info
             return info
 
-        soup = BeautifulSoup(response.read(), "html.parser")
+        soup = BeautifulSoup(response.read().decode('utf-8', 'ignore'), "html.parser")
         for a in soup.find_all('a', attrs={'class' : 'postTitle2'}):
-            self.url_list.append(a.get('href'))
+            self.url_list.append(a.get('href').encode('utf-8'))
 
         next_page = soup.find(id = 'nav_next_page')
         if next_page:
@@ -75,7 +75,7 @@ class GrabCnblogPost():
             pages = pager.find_all('a')
 
             for page in pages:
-                if page.get_text() == u'下一页':
+                if page.get_text().encode("utf-8") == '下一页':
                     next_page = page.get('href')
                     break
 
@@ -86,8 +86,8 @@ class GrabCnblogPost():
         ret = ""
         for art in post.children:
             if isinstance(art, element.NavigableString):
-                if  art.string != '\n':
-                    ret = ret + art.string
+                if  art.string.encode('utf-8') != '\n':
+                    ret = ret + art.string.encode('utf-8')
                 continue
 
             s = ""
@@ -96,11 +96,11 @@ class GrabCnblogPost():
                 s = self.__extract_post_content__(art)
 
             if art.name == "img":
-                s = s + " [" + art.get("src") +"]"
+                s = s + " [" + art.get("src").encode('utf-8') + "]"
             elif art.name == "br":
                 s = s + "\n"
             elif art.name == "a":
-                s = s + " [" + art.get("href") + "]"
+                s = s + " [" + art.get("href").encode('utf-8') + "]"
             elif art.name == "p" or art.name == "pre":
                 s = s + "\n"
             elif art.name == "h1" or art.name == "h2" or art.name == "h3" or art.name == "h4":
@@ -126,8 +126,8 @@ class GrabCnblogPost():
                 print info
                 continue
 
-            soup = BeautifulSoup(response.read(), "html.parser")
-            title = soup.find(id='cb_post_title_url').string
+            soup = BeautifulSoup(response.read().decode('utf-8','ignore'), "html.parser")
+            title = soup.find(id='cb_post_title_url').string.encode('utf-8')
             post = soup.find(id='cnblogs_post_body')
             if not post:
                 return
@@ -137,12 +137,14 @@ class GrabCnblogPost():
             content = "\n" + title + "\n\n" + self.__extract_post_content__(post)
 
             txt_file = os.path.join(folder, title)
-            self.saver.StoreTxtFile(txt_file, content.encode("utf-8"))
+
+            print "file path:%s"%txt_file
+            self.saver.StoreTxtFile(txt_file, content)
 
             # grab image files
             img_links = post.find_all('img')
             for img_link in img_links:
-                img_url = img_link.get('src')
+                img_url = img_link.get('src').encode('utf-8')
                 img = urllib2.urlopen(img_url).read()
                 file = self.__extract_file_name__(img_url)
                 path = os.path.join(folder, file)
@@ -176,7 +178,7 @@ if __name__ == "__main__":
     saver = FileSystemSaver()
     grabber = GrabCnblogPost('catch', saver)
     try:
-        info = grabber.get_all_post('~/blogs')
+        info = grabber.get_all_post('C:\\Users\\miliao\\blogs')
         print info
     except Exception as e:
         print "error occurs, please check, msg:", str(e)

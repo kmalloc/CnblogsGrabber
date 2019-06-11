@@ -8,14 +8,14 @@ from bs4 import BeautifulSoup
 
 class FileSystemSaver:
     def StoreTxtFile(self, path, content):
-        folder = os.path.dirname(path.decode('utf-8'))
+        folder = os.path.dirname(path)
         self.__create_folder__(folder)
-        self.__write_text__(path.decode('utf-8'), content)
+        self.__write_text__(path, content)
 
     def StoreBinFile(self, path, content):
-        folder = os.path.dirname(path.decode('utf-8'))
+        folder = os.path.dirname(path)
         self.__create_folder__(folder)
-        self.__write_binary__(path.decode('utf-8'), content)
+        self.__write_binary__(path, content)
 
     def __create_folder__(self, folder):
         try:
@@ -138,8 +138,8 @@ class GrabCnblogPost():
 
             txt_file = os.path.join(folder, title)
 
-            print "file path:%s"%txt_file
-            self.saver.StoreTxtFile(txt_file, content)
+            print "%d:file path:%s"%(num, txt_file)
+            self.saver.StoreTxtFile(txt_file.decode("utf-8"), content)
 
             # grab image files
             img_links = post.find_all('img')
@@ -148,7 +148,7 @@ class GrabCnblogPost():
                 img = urllib2.urlopen(img_url).read()
                 file = self.__extract_file_name__(img_url)
                 path = os.path.join(folder, file)
-                self.saver.StoreBinFile(path, img)
+                self.saver.StoreBinFile(path.decode("utf-8"), img)
 
         return num
 
